@@ -1,0 +1,15 @@
+{
+  "model_dir": "models/run00",
+
+  "num_landmarks": 5, "weight_decay": 5e-4,
+  "epsilon": 2.0, "w": 10.0,
+
+  "lr_boundaries": [25000, 35000, 40000],
+  "lr_values": [0.05, 0.01, 0.001, 0.0001],
+
+  "image_size": [112, 112],
+  "batch_size": 128,
+  "train_dataset": "data/train_shards/",
+  "val_dataset": "data/val_shards/",
+  "num_steps": 50000
+}
