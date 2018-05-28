@@ -20,9 +20,9 @@ Images must have .jpg or .jpeg filename extension.
 Example of a json annotation (with filename "132416.json"):
 {
   "box": {"ymin": 1, "ymax": 248, "xmax": 1149, "xmin": 1014},
-  "landmarks": [[], [], [], [], []]
+  "landmarks": [[102, 98], [135, 109], [121, 132], [85, 134], [117, 144]]
   "filename": "132416.jpg",
-  "size": {"depth": 3, "width": 1920, "height": 1080}
+  "size": {"depth": 3, "width": 356, "height": 570}
 }
 
 Example of use:
@@ -72,10 +72,6 @@ def dict_to_tf_example(annotation, image_dir):
     height = int(annotation['size']['height'])
     assert width > 0 and height > 0
     assert image.size[0] == width and image.size[1] == height
-    ymin, xmin, ymax, xmax = [], [], [], []
-
-    just_name = image_name[:-4] if image_name.endswith('.jpg') else image_name[:-5]
-    annotation_name = just_name + '.json'
 
     ymin = float(annotation['box']['ymin'])/height
     xmin = float(annotation['box']['xmin'])/width
@@ -84,7 +80,9 @@ def dict_to_tf_example(annotation, image_dir):
     assert (ymin < ymax) and (xmin < xmax)
 
     landmarks = annotation['landmarks']
-    landmarks = [[y/height, x/width] for x, y in landmarks]
+    landmarks_flattened = []
+    for x, y in landmarks:
+        landmarks_flattened.extend([y/height, x/width]) 
 
     example = tf.train.Example(features=tf.train.Features(feature={
         'image': _bytes_feature(encoded_jpg),
@@ -92,7 +90,7 @@ def dict_to_tf_example(annotation, image_dir):
         'xmax': _float_feature(xmax),
         'ymin': _float_feature(ymin),
         'ymax': _float_feature(ymax),
-        'landmarks': _float_list_feature(landmarks),
+        'landmarks': _float_list_feature(landmarks_flattened),
     }))
     return example
 

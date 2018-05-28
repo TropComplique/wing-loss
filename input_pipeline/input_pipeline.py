@@ -1,7 +1,6 @@
 import tensorflow as tf
 
-from .random_image_crop import random_image_crop
-from .other_augmentations import random_color_manipulations,\
+from .augmentations import random_color_manipulations,\
     random_flip_left_right, random_pixel_value_scale, random_gaussian_blur,\
     random_rotation, random_box_jitter
 
@@ -88,7 +87,7 @@ class Pipeline:
             'xmin': tf.FixedLenFeature([], tf.float32),
             'ymax': tf.FixedLenFeature([], tf.float32),
             'xmax': tf.FixedLenFeature([], tf.float32),
-            'landmarks': tf.FixedLenFeature([self.num_landmarks, 2], tf.float32)
+            'landmarks': tf.FixedLenFeature([2 * self.num_landmarks], tf.float32)
         }
         parsed_features = tf.parse_single_example(example_proto, features)
 
@@ -107,6 +106,7 @@ class Pipeline:
 
         # get facial landmarks, they must be in from-zero-to-one format
         landmarks = tf.to_float(parsed_features['landmarks'])
+        landmarks = tf.reshape(landmarks, [self.num_landmarks, 2])
         landmarks = tf.clip_by_value(landmarks, clip_value_min=0.0, clip_value_max=1.0)
 
         if self.augmentation:
@@ -125,9 +125,9 @@ class Pipeline:
         # there are a lot of hyperparameters here,
         # you will need to tune them all, haha
 
-        image, box, landmarks = random_rotation(image, box, landmarks, max_angle=10)
-        box = random_box_jitter(box, landmarks, ratio=0.05)
-        image, landmarks = crop(image, landmarks, box)
+        image, box, landmarks = random_rotation(image, box, landmarks, max_angle=30)
+        #box = random_box_jitter(box, landmarks, ratio=0.05)
+        #image, landmarks = crop(image, landmarks, box)
         image = tf.image.resize_images(
             image, [self.image_height, self.image_width],
             method=RESIZE_METHOD
@@ -147,14 +147,16 @@ def crop(image, landmarks, box):
     box = box * scaler
     ymin, xmin, ymax, xmax = tf.unstack(box, axis=0)
     h, w = ymax - ymin, xmax - xmin
-    margin_y, margin_x = h / 3.0, w / 3.0
+    margin_y, margin_x = h / 2.0, w / 2.0
 
     ymin, xmin = ymin - 0.5 * margin_y, xmin - 0.5 * margin_x
     ymax, xmax = ymax + 0.5 * margin_y, xmax + 0.5 * margin_x
     ymin, xmin = tf.maximum(ymin, 0.0), tf.maximum(xmin, 0.0)
     ymax, xmax = tf.minimum(ymax, image_h), tf.minimum(xmax, image_w)
-
-    image = tf.image.crop_to_bounding_box(image, ymin, xmin, ymax - ymin, xmax - xmin)
+    image = tf.image.crop_to_bounding_box(
+        image, tf.to_int32(ymin), tf.to_int32(xmin), 
+        tf.to_int32(ymax - ymin), tf.to_int32(xmax - xmin)
+    )
 
     shift = tf.stack([ymin/(ymax - ymin), xmin/(xmax - xmin)], axis=0)
     scaler = tf.stack([image_h/(ymax - ymin), image_w/(xmax - xmin)], axis=0)

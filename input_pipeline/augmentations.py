@@ -10,8 +10,7 @@ it is a RGB image with pixel values in range [0, 1].
 
 
 def random_rotation(image, box, landmarks, max_angle=10):
-    with tf.name_scope('random_rotation'):
-
+    with tf.name_scope('random_rotation'):        
         # get a random angle
         max_angle_radians = max_angle*(math.pi/180.0)
         theta = tf.random_uniform(
@@ -20,8 +19,8 @@ def random_rotation(image, box, landmarks, max_angle=10):
         )
 
         rotation = tf.stack([
-            tf.cos(theta), -tf.sin(theta),
-            tf.sin(theta), tf.cos(theta)
+            tf.cos(theta), tf.sin(theta),
+            -tf.sin(theta), tf.cos(theta)
         ], axis=0)
         rotation_matrix = tf.reshape(rotation, [2, 2])
 
@@ -29,9 +28,11 @@ def random_rotation(image, box, landmarks, max_angle=10):
         box = tf.matmul(tf.reshape(box, [2, 2]), rotation_matrix)
         box = tf.reshape(box, [4])
         landmarks = tf.matmul(landmarks, rotation_matrix)
+        # note: landmark and box coordinates are (y, x) not (x, y)
 
         # rotate image
-        transform = tf.stack([tf.cos(theta), -tf.sin(theta), 0.0, tf.sin(theta), tf.cos(theta), 0.0, 0.0, 0.0], axis=0)
+        transform = tf.stack([tf.cos(theta), tf.sin(theta), 0.0, -tf.sin(theta), tf.cos(theta), 0.0, 0.0, 0.0], axis=0)
+        #transform = tf.stack([tf.sin(theta), tf.cos(theta), 0.0, tf.cos(theta), -tf.sin(theta), 0.0, 0.0, 0.0], axis=0)
         image = tf.contrib.image.transform(image, transform, interpolation='BILINEAR')
 
         return image, box, landmarks
@@ -88,8 +89,7 @@ def random_flip_left_right(image, landmarks):
         flipped_image = tf.image.flip_left_right(image)
         y, x = tf.unstack(landmarks, axis=1)
         flipped_x = tf.subtract(1.0, x)
-        flipped_y = tf.subtract(1.0, y)
-        flipped_landmarks = tf.stack([flipped_y, flipped_x], axis=1)
+        flipped_landmarks = tf.stack([y, flipped_x], axis=1)
         return flipped_image, flipped_landmarks
 
     with tf.name_scope('random_flip_left_right'):
@@ -147,7 +147,7 @@ def random_box_jitter(box, landmarks, ratio=0.05):
 
         ymin2, xmin2, ymax2, xmax2 = tf.unstack(box, axis=0)
         box_height, box_width = ymax2 - ymin2, xmax2 - xmin2
-        hw_coefs = tf.stack([box_height, box_width, box_height, box_width], axis=0)
+        #hw_coefs = tf.stack([box_height, box_width, box_height, box_width], axis=0)
 
         ymin3 = tf.random_uniform(
             [], minval=ymin2 - box_height * ratio,
@@ -155,7 +155,7 @@ def random_box_jitter(box, landmarks, ratio=0.05):
         )
         xmin3 = tf.random_uniform(
             [], minval=xmin2 - box_width * ratio,
-            maxval=ymax, dtype=tf.float32
+            maxval=xmin, dtype=tf.float32
         )
         ymax3 = tf.random_uniform(
             [], minval=ymax,
