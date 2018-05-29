@@ -6,11 +6,13 @@ import math
 """
 `image` is assumed to be a float tensor with shape [height, width, 3],
 it is a RGB image with pixel values in range [0, 1].
+`box` is a float tensor with shape [4].
+`landmarks` is a float tensor with shape [num_landmarks, 2].
 """
 
 
 def random_rotation(image, box, landmarks, max_angle=10):
-    with tf.name_scope('random_rotation'):        
+    with tf.name_scope('random_rotation'):
         # get a random angle
         max_angle_radians = max_angle*(math.pi/180.0)
         theta = tf.random_uniform(
@@ -32,13 +34,12 @@ def random_rotation(image, box, landmarks, max_angle=10):
 
         # rotate image
         transform = tf.stack([tf.cos(theta), tf.sin(theta), 0.0, -tf.sin(theta), tf.cos(theta), 0.0, 0.0, 0.0], axis=0)
-        #transform = tf.stack([tf.sin(theta), tf.cos(theta), 0.0, tf.cos(theta), -tf.sin(theta), 0.0, 0.0, 0.0], axis=0)
         image = tf.contrib.image.transform(image, transform, interpolation='BILINEAR')
 
         return image, box, landmarks
 
 
-def random_gaussian_blur(image, probability=0.3, kernel_size=5):
+def random_gaussian_blur(image, probability=0.3, kernel_size=3):
 
     def blur(image):
         image = (image*255.0).astype('uint8')
@@ -143,12 +144,13 @@ def random_box_jitter(box, landmarks, ratio=0.05):
         y, x = tf.unstack(landmarks, axis=1)
         ymin, ymax = tf.reduce_min(y), tf.reduce_max(y)
         xmin, xmax = tf.reduce_min(x), tf.reduce_max(x)
-        # we want to keep landmarks inside new distorted box
+        # we want to keep landmarks inside the new distorted box
 
         ymin2, xmin2, ymax2, xmax2 = tf.unstack(box, axis=0)
         box_height, box_width = ymax2 - ymin2, xmax2 - xmin2
-        #hw_coefs = tf.stack([box_height, box_width, box_height, box_width], axis=0)
 
+        # it is assumed that initially
+        # all landmarks were inside the box
         ymin3 = tf.random_uniform(
             [], minval=ymin2 - box_height * ratio,
             maxval=ymin, dtype=tf.float32

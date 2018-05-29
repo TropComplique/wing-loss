@@ -2,7 +2,7 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
 
-BATCH_NORM_MOMENTUM = 0.9
+BATCH_NORM_MOMENTUM = 0.91
 
 
 def network(images, is_training, num_landmarks):

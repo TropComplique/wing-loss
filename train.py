@@ -14,8 +14,8 @@ def get_input_fn(is_training=True):
 
     image_size = params['image_size']
     data_dir = params['train_dataset'] if is_training else params['val_dataset']
-    num_gpu = params['num_gpu'] if is_training else 1
     batch_size = params['batch_size']
+    num_landmarks = params['num_landmarks']
 
     filenames = os.listdir(data_dir)
     filenames = [n for n in filenames if n.endswith('.tfrecords')]
@@ -25,7 +25,7 @@ def get_input_fn(is_training=True):
     def input_fn():
         with tf.device('/cpu:0'), tf.name_scope('input_pipeline'):
             pipeline = Pipeline(
-                filenames, batch_size=batch_size, image_size=image_size, num_gpu=num_gpu,
+                filenames, batch_size=batch_size, image_size=image_size, num_landmarks=num_landmarks,
                 repeat=is_training, shuffle=is_training, augmentation=is_training,
             )
             features, labels = pipeline.get_batch()
@@ -47,22 +47,14 @@ run_config = run_config.replace(
 )
 
 train_input_fn = get_input_fn(is_training=True)
-# val_input_fn = get_input_fn(is_training=False)
+val_input_fn = get_input_fn(is_training=False)
 
-multi_gpu = params['num_gpu'] > 1
-if multi_gpu:
-    model_fn = tf.contrib.estimator.replicate_model_fn(
-        model_fn, loss_reduction=tf.losses.Reduction.MEAN
-    )
 estimator = tf.estimator.Estimator(model_fn, params=params, config=run_config)
-
-
-# train_spec = tf.estimator.TrainSpec(
-#     train_input_fn, max_steps=params['num_steps']
-# )
-# eval_spec = tf.estimator.EvalSpec(
-#     val_input_fn, steps=None,
-#     start_delay_secs=300, throttle_secs=300
-# )
-# tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
-estimator.train(train_input_fn, max_steps=params['num_steps'])
+train_spec = tf.estimator.TrainSpec(
+    train_input_fn, max_steps=params['num_steps']
+)
+eval_spec = tf.estimator.EvalSpec(
+    val_input_fn, steps=None,
+    start_delay_secs=600, throttle_secs=600
+)
+tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)

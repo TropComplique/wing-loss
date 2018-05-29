@@ -5,7 +5,7 @@ from .augmentations import random_color_manipulations,\
     random_rotation, random_box_jitter
 
 
-SHUFFLE_BUFFER_SIZE = 10000
+SHUFFLE_BUFFER_SIZE = 20000
 NUM_THREADS = 8
 RESIZE_METHOD = tf.image.ResizeMethod.BILINEAR
 
@@ -45,7 +45,6 @@ class Pipeline:
 
         if shuffle:
             dataset = dataset.shuffle(buffer_size=num_shards)
-
         dataset = dataset.flat_map(tf.data.TFRecordDataset)
         dataset = dataset.prefetch(buffer_size=batch_size)
 
@@ -77,9 +76,7 @@ class Pipeline:
         Returns:
             image: a float tensor with shape [3, image_height, image_width],
                 an RGB image with pixel values in the range [0, 1].
-            boxes: a float tensor with shape [num_boxes, 4].
-            num_boxes: an int tensor with shape [].
-            filename: a string tensor with shape [].
+            landmarks: a float tensor with shape [num_landmarks, 2].
         """
         features = {
             'image': tf.FixedLenFeature([], tf.string),
@@ -124,40 +121,44 @@ class Pipeline:
     def _augmentation_fn(self, image, box, landmarks):
         # there are a lot of hyperparameters here,
         # you will need to tune them all, haha
-
         image, box, landmarks = random_rotation(image, box, landmarks, max_angle=30)
-        #box = random_box_jitter(box, landmarks, ratio=0.05)
-        #image, landmarks = crop(image, landmarks, box)
+        box = random_box_jitter(box, landmarks, ratio=0.05)
+        image, landmarks = crop(image, landmarks, box)
         image = tf.image.resize_images(
             image, [self.image_height, self.image_width],
             method=RESIZE_METHOD
         )
-
         image = random_color_manipulations(image, probability=0.15, grayscale_probability=0.05)
         image = random_pixel_value_scale(image, minval=0.85, maxval=1.15, probability=0.15)
-        image = random_gaussian_blur(image, probability=0.3, kernel_size=5)
+        image = random_gaussian_blur(image, probability=0.3, kernel_size=2)
         image, landmarks = random_flip_left_right(image, landmarks)
         return image, landmarks
 
 
 def crop(image, landmarks, box):
+    """
+    Crops the image to the box.
+    It also adds some margin.
+    Finally, it transforms coordinates of the landmarks.
+    """
     image_h = tf.to_float(tf.shape(image)[0])
     image_w = tf.to_float(tf.shape(image)[1])
     scaler = tf.stack([image_h, image_w, image_h, image_w], axis=0)
     box = box * scaler
     ymin, xmin, ymax, xmax = tf.unstack(box, axis=0)
     h, w = ymax - ymin, xmax - xmin
-    margin_y, margin_x = h / 2.0, w / 2.0
+    margin_y, margin_x = h / 2.0, w / 2.0  # 2.0 here is a hyperparameter
 
     ymin, xmin = ymin - 0.5 * margin_y, xmin - 0.5 * margin_x
     ymax, xmax = ymax + 0.5 * margin_y, xmax + 0.5 * margin_x
     ymin, xmin = tf.maximum(ymin, 0.0), tf.maximum(xmin, 0.0)
     ymax, xmax = tf.minimum(ymax, image_h), tf.minimum(xmax, image_w)
     image = tf.image.crop_to_bounding_box(
-        image, tf.to_int32(ymin), tf.to_int32(xmin), 
+        image, tf.to_int32(ymin), tf.to_int32(xmin),
         tf.to_int32(ymax - ymin), tf.to_int32(xmax - xmin)
     )
 
+    # translate coordinates of the landmarks
     shift = tf.stack([ymin/(ymax - ymin), xmin/(xmax - xmin)], axis=0)
     scaler = tf.stack([image_h/(ymax - ymin), image_w/(xmax - xmin)], axis=0)
     landmarks = (landmarks * scaler) - shift

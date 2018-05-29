@@ -14,7 +14,7 @@ def wing_loss(x, w=10.0, epsilon=2.0):
         c = w * (1.0 - math.log(1.0 + w/epsilon))
         absolute_x = tf.abs(x)
         losses = tf.where(
-            tf.greater(absolute_x, w),
+            tf.greater(w, absolute_x),
             w * tf.log(1.0 + absolute_x/epsilon),
             absolute_x - c
         )

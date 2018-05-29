@@ -25,12 +25,19 @@ Example of a json annotation (with filename "132416.json"):
   "size": {"depth": 3, "width": 356, "height": 570}
 }
 
+Landmarks are in the following order:
+[[lefteye_x lefteye_y]
+ [righteye_x righteye_y]
+ [nose_x nose_y]
+ [leftmouth_x leftmouth_y]
+ [rightmouth_x rightmouth_y]]
+
 Example of use:
 python create_tfrecords.py \
-    --image_dir=/home/gpu2/hdd/dan/WIDER/val/images/ \
-    --annotations_dir=/home/gpu2/hdd/dan/WIDER/val/annotations/ \
+    --image_dir=/home/gpu2/hdd/dan/CelebA/train/images/ \
+    --annotations_dir=/home/gpu2/hdd/dan/CelebA/train/annotations/ \
     --output=data/train_shards/ \
-    --num_shards=100
+    --num_shards=500
 """
 
 
@@ -79,10 +86,11 @@ def dict_to_tf_example(annotation, image_dir):
     xmax = float(annotation['box']['xmax'])/width
     assert (ymin < ymax) and (xmin < xmax)
 
+    # note that i reversing order of the coordinates here
     landmarks = annotation['landmarks']
     landmarks_flattened = []
     for x, y in landmarks:
-        landmarks_flattened.extend([y/height, x/width]) 
+        landmarks_flattened.extend([y/height, x/width])
 
     example = tf.train.Example(features=tf.train.Features(feature={
         'image': _bytes_feature(encoded_jpg),
