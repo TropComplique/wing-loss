@@ -122,7 +122,7 @@ class Pipeline:
         # there are a lot of hyperparameters here,
         # you will need to tune them all, haha
         image, box, landmarks = random_rotation(image, box, landmarks, max_angle=30)
-        box = random_box_jitter(box, landmarks, ratio=0.05)
+        box = random_box_jitter(box, landmarks, ratio=0.15)
         image, landmarks = crop(image, landmarks, box)
         image = tf.image.resize_images(
             image, [self.image_height, self.image_width],
