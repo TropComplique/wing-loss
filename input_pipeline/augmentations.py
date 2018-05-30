@@ -19,42 +19,47 @@ def random_rotation(image, box, landmarks, max_angle=10):
             [], minval=-max_angle_radians,
             maxval=max_angle_radians, dtype=tf.float32
         )
-    
+
+        # find the center of the image
         image_h = tf.to_float(tf.shape(image)[0])
         image_w = tf.to_float(tf.shape(image)[1])
+        scaler = tf.stack([image_h, image_w], axis=0)
         center = tf.stack([0.5*image_h, 0.5*image_w], axis=0)
         center = tf.reshape(center, [1, 2])
-        
-        scaler = tf.stack([image_h, image_w], axis=0)
-        #box = box * scaler
-    
+
         rotation = tf.stack([
             tf.cos(theta), tf.sin(theta),
             -tf.sin(theta), tf.cos(theta)
         ], axis=0)
-        rotation_matrix2 = tf.reshape(rotation, [2, 2])
-        
-        rotation = tf.stack([
+        rotation_matrix = tf.reshape(rotation, [2, 2])
+
+        inverse_rotation = tf.stack([
             tf.cos(theta), -tf.sin(theta),
             tf.sin(theta), tf.cos(theta)
         ], axis=0)
-        rotation_matrix = tf.reshape(rotation, [2, 2])
+        inverse_rotation_matrix = tf.reshape(inverse_rotation, [2, 2])
 
-        # rotate box and landmarks
-        #box = tf.Print(box, [box, tf.reshape(box, [2, 2])])
-        box = tf.matmul(tf.reshape(box, [2, 2])*scaler - center, rotation_matrix) + center
-        box = box/scaler
-        box = tf.reshape(box, [4])
-        #box = tf.clip_by_value(box, 0.0, 1.0)
-        landmarks = tf.matmul(landmarks*scaler - center, rotation_matrix) + center
+        # now i want to rotate the image and annotations around the image center,
         # note: landmark and box coordinates are (y, x) not (x, y)
+
+        # rotate box
+        box = tf.matmul(tf.reshape(box, [2, 2])*scaler - center, rotation_matrix) + center
+        box = tf.reshape(box/scaler, [4])
+        box = tf.clip_by_value(box, 0.0, 1.0)
+
+        # rotate landmarks
+        landmarks = tf.matmul(landmarks*scaler - center, rotation_matrix) + center
         landmarks = landmarks/scaler
-        
-        
-        translate = center - tf.matmul(center, rotation_matrix2)
-        translate_y, translate_x = tf.unstack(tf.squeeze(translate, axis=0), axis=0)
+        landmarks = tf.clip_by_value(landmarks, 0.0, 1.0)
+
         # rotate image
-        transform = tf.stack([tf.cos(theta), tf.sin(theta), translate_x, -tf.sin(theta), tf.cos(theta), translate_y, 0.0, 0.0], axis=0)
+        translate = center - tf.matmul(center, inverse_rotation_matrix)
+        translate_y, translate_x = tf.unstack(tf.squeeze(translate, axis=0), axis=0)
+        transform = tf.stack([
+            tf.cos(theta), tf.sin(theta), translate_x,
+            -tf.sin(theta), tf.cos(theta), translate_y,
+            0.0, 0.0
+        ])
         image = tf.contrib.image.transform(image, transform, interpolation='BILINEAR')
 
         return image, box, landmarks
@@ -112,11 +117,9 @@ def random_flip_left_right(image, landmarks):
         y, x = tf.unstack(landmarks, axis=1)
         flipped_x = tf.subtract(1.0, x)
         flipped_landmarks = tf.stack([y, flipped_x], axis=1)
-        
-        # landmarks:
-        # left_eye right_eye
-        # nose
-        # left_mouth right_mouth
+
+        # landmarks order: left_eye, right_eye, nose, left_mouth, right_mouth.
+        # so, when we flip the image we need to flip some of the landmarks
         correct_order = tf.constant([1, 0, 2, 4, 3], dtype=tf.int32)
         flipped_landmarks = tf.gather(flipped_landmarks, correct_order)
 
