@@ -27,6 +27,8 @@ class Pipeline:
         self.image_width, self.image_height = image_size
         self.augmentation = augmentation
         self.batch_size = batch_size
+
+        assert num_landmarks == 5
         self.num_landmarks = num_landmarks
 
         def get_num_samples(filename):
@@ -122,15 +124,15 @@ class Pipeline:
         # there are a lot of hyperparameters here,
         # you will need to tune them all, haha
         image, box, landmarks = random_rotation(image, box, landmarks, max_angle=30)
-        box = random_box_jitter(box, landmarks, ratio=0.15)
+        box = random_box_jitter(box, landmarks, ratio=0.2)
         image, landmarks = crop(image, landmarks, box)
         image = tf.image.resize_images(
             image, [self.image_height, self.image_width],
             method=RESIZE_METHOD
         )
-        image = random_color_manipulations(image, probability=0.15, grayscale_probability=0.05)
-        image = random_pixel_value_scale(image, minval=0.85, maxval=1.15, probability=0.15)
-        image = random_gaussian_blur(image, probability=0.3, kernel_size=2)
+        image = random_color_manipulations(image, probability=0.2, grayscale_probability=0.05)
+        image = random_pixel_value_scale(image, minval=0.85, maxval=1.15, probability=0.2)
+        image = random_gaussian_blur(image, probability=0.3, kernel_size=3)
         image, landmarks = random_flip_left_right(image, landmarks)
         return image, landmarks
 
@@ -162,4 +164,5 @@ def crop(image, landmarks, box):
     shift = tf.stack([ymin/(ymax - ymin), xmin/(xmax - xmin)], axis=0)
     scaler = tf.stack([image_h/(ymax - ymin), image_w/(xmax - xmin)], axis=0)
     landmarks = (landmarks * scaler) - shift
+    landmarks = tf.clip_by_value(landmarks, 0.0, 1.0)
     return image, landmarks

@@ -56,8 +56,8 @@ def random_rotation(image, box, landmarks, max_angle=10):
         translate = center - tf.matmul(center, inverse_rotation_matrix)
         translate_y, translate_x = tf.unstack(tf.squeeze(translate, axis=0), axis=0)
         transform = tf.stack([
-            tf.cos(theta), tf.sin(theta), translate_x,
-            -tf.sin(theta), tf.cos(theta), translate_y,
+            tf.cos(theta), -tf.sin(theta), translate_x,
+            tf.sin(theta), tf.cos(theta), translate_y,
             0.0, 0.0
         ])
         image = tf.contrib.image.transform(image, transform, interpolation='BILINEAR')
