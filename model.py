@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from network import network
 from loss import wing_loss
-from evaluation import get_nme_metric_ops
+from evaluation import nme_metric_ops
 
 
 def model_fn(features, labels, mode, params, config):
@@ -26,10 +26,9 @@ def model_fn(features, labels, mode, params, config):
             export_outputs={'outputs': export_outputs}
         )
 
-    losses = wing_loss(landmarks - labels, w=params['w'], epsilon=params['epsilon'])
-    loss = tf.reduce_mean(losses, axis=0)
+    loss = wing_loss(landmarks, labels, w=params['w'], epsilon=params['epsilon'])
     tf.losses.add_loss(loss)
-    tf.summary.scalar('wing_loss', loss)
+    tf.summary.scalar('just_wing_loss', loss)
 
     # add L2 regularization
     with tf.name_scope('weight_decay'):
@@ -41,8 +40,8 @@ def model_fn(features, labels, mode, params, config):
 
     if mode == tf.estimator.ModeKeys.EVAL:
         eval_metric_ops = {
-            'mean_absolute_error': tf.metrics.mean_absolute_error(labels, landmarks),
-            'normalized mean error': get_nme_metric_ops(labels, landmarks)
+            'validation_mae': tf.metrics.mean_absolute_error(labels, landmarks),
+            'normalized_mean_error': nme_metric_ops(labels, landmarks)
         }
         return tf.estimator.EstimatorSpec(
             mode, loss=total_loss,
@@ -52,7 +51,7 @@ def model_fn(features, labels, mode, params, config):
     assert mode == tf.estimator.ModeKeys.TRAIN
 
     with tf.name_scope('evaluation_ops'):
-        mae = tf.reduce_mean(tf.reduce_sum(tf.abs(labels - landmarks), axis=[1, 2]), axis=0)
+        mae = tf.reduce_mean(tf.abs(labels - landmarks), axis=[0, 1, 2])
 
     with tf.variable_scope('learning_rate'):
         global_step = tf.train.get_global_step()

@@ -124,7 +124,7 @@ class Pipeline:
         # there are a lot of hyperparameters here,
         # you will need to tune them all, haha
         image, box, landmarks = random_rotation(image, box, landmarks, max_angle=30)
-        box = random_box_jitter(box, landmarks, ratio=0.2)
+        box = random_box_jitter(box, landmarks, ratio=0.25)
         image, landmarks = crop(image, landmarks, box)
         image = tf.image.resize_images(
             image, [self.image_height, self.image_width],
@@ -132,7 +132,7 @@ class Pipeline:
         )
         image = random_color_manipulations(image, probability=0.2, grayscale_probability=0.05)
         image = random_pixel_value_scale(image, minval=0.85, maxval=1.15, probability=0.2)
-        image = random_gaussian_blur(image, probability=0.3, kernel_size=3)
+        image = random_gaussian_blur(image, probability=0.25, kernel_size=4)
         image, landmarks = random_flip_left_right(image, landmarks)
         return image, landmarks
 
@@ -148,21 +148,33 @@ def crop(image, landmarks, box):
     scaler = tf.stack([image_h, image_w, image_h, image_w], axis=0)
     box = box * scaler
     ymin, xmin, ymax, xmax = tf.unstack(box, axis=0)
+
     h, w = ymax - ymin, xmax - xmin
-    margin_y, margin_x = h / 2.0, w / 2.0  # 2.0 here is a hyperparameter
+    margin_y, margin_x = h / 4.0, w / 4.0  # 2.0 here is a hyperparameter
 
     ymin, xmin = ymin - 0.5 * margin_y, xmin - 0.5 * margin_x
     ymax, xmax = ymax + 0.5 * margin_y, xmax + 0.5 * margin_x
     ymin, xmin = tf.maximum(ymin, 0.0), tf.maximum(xmin, 0.0)
     ymax, xmax = tf.minimum(ymax, image_h), tf.minimum(xmax, image_w)
-    image = tf.image.crop_to_bounding_box(
-        image, tf.to_int32(ymin), tf.to_int32(xmin),
-        tf.to_int32(ymax - ymin), tf.to_int32(xmax - xmin)
+    
+    # for some reason box width or height sometimes becomes negative,
+    # it happens very very rarely
+    h, w = tf.to_int32(ymax - ymin), tf.to_int32(xmax - xmin)
+
+    def do_it(image, landmarks):
+        image = tf.image.crop_to_bounding_box(
+            image, tf.to_int32(ymin), tf.to_int32(xmin), h, w
+        )
+        # translate coordinates of the landmarks
+        shift = tf.stack([ymin/(ymax - ymin), xmin/(xmax - xmin)], axis=0)
+        scaler = tf.stack([image_h/(ymax - ymin), image_w/(xmax - xmin)], axis=0)
+        landmarks = (landmarks * scaler) - shift
+        return image, landmarks
+    image, landmarks = tf.cond(
+        tf.greater(h*w, 0), 
+        lambda: do_it(image, landmarks), 
+        lambda: (image, landmarks)
     )
 
-    # translate coordinates of the landmarks
-    shift = tf.stack([ymin/(ymax - ymin), xmin/(xmax - xmin)], axis=0)
-    scaler = tf.stack([image_h/(ymax - ymin), image_w/(xmax - xmin)], axis=0)
-    landmarks = (landmarks * scaler) - shift
     landmarks = tf.clip_by_value(landmarks, 0.0, 1.0)
     return image, landmarks

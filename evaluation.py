@@ -15,7 +15,7 @@ and that they are in the following order:
 """
 
 
-def get_nme_metric_ops(labels, landmarks):
+def nme_metric_ops(labels, landmarks):
     """
     Arguments:
         labels, landmarks: a float tensors with shape [batch_size, num_landmarks, 2].
@@ -25,9 +25,9 @@ def get_nme_metric_ops(labels, landmarks):
 
     norms = tf.norm(labels - landmarks, axis=2)
     mean_norm = tf.reduce_mean(norms, axis=1)  # shape [batch_size]
-    eye_distance = tf.norm(labels[:, 0, :] - labels[:, 1, :], axis=0)  # shape [batch_size]
+    eye_distance = tf.norm(labels[:, 0, :] - labels[:, 1, :], axis=1)  # shape [batch_size]
 
-    epsilon = 1e-6
+    epsilon = 1e-4
     values = mean_norm/tf.maximum(eye_distance, epsilon)
 
     mean, update_op = tf.metrics.mean(values)

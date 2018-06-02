@@ -56,6 +56,7 @@ def network(images, is_training, num_landmarks):
             x, 2 * num_landmarks, activation_fn=None,
             normalizer_fn=None, scope='fc2'
         )
+        x = tf.reshape(x, [-1, num_landmarks, 2])
         return x
 
 

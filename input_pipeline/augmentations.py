@@ -43,14 +43,21 @@ def random_rotation(image, box, landmarks, max_angle=10):
         # note: landmark and box coordinates are (y, x) not (x, y)
 
         # rotate box
-        box = tf.matmul(tf.reshape(box, [2, 2])*scaler - center, rotation_matrix) + center
-        box = tf.reshape(box/scaler, [4])
-        box = tf.clip_by_value(box, 0.0, 1.0)
+        ymin, xmin, ymax, xmax = tf.unstack(box, axis=0)
+        h, w = ymax - ymin, xmax - xmin
+        box = tf.stack([
+            ymin, xmin, ymin, xmax,
+            ymax, xmax, ymax, xmin
+        ], axis=0)  # four corners
+        box = tf.matmul(tf.reshape(box, [4, 2])*scaler - center, rotation_matrix) + center
+        y, x = tf.unstack(box/scaler, axis=1)
+        ymin, ymax = tf.reduce_min(y), tf.reduce_max(y)
+        xmin, xmax = tf.reduce_min(x), tf.reduce_max(x)
+        box = tf.stack([ymin, xmin, ymax, xmax], axis=0)
 
         # rotate landmarks
         landmarks = tf.matmul(landmarks*scaler - center, rotation_matrix) + center
         landmarks = landmarks/scaler
-        landmarks = tf.clip_by_value(landmarks, 0.0, 1.0)
 
         # rotate image
         translate = center - tf.matmul(center, inverse_rotation_matrix)
@@ -66,7 +73,8 @@ def random_rotation(image, box, landmarks, max_angle=10):
 
 
 def random_gaussian_blur(image, probability=0.3, kernel_size=3):
-
+    h, w, _ = image.shape.as_list()
+    
     def blur(image):
         image = (image*255.0).astype('uint8')
         image = cv2.blur(image, (kernel_size, kernel_size))
@@ -79,6 +87,7 @@ def random_gaussian_blur(image, probability=0.3, kernel_size=3):
             lambda: tf.py_func(blur, [image], tf.float32, stateful=False),
             lambda: image
         )
+        image.set_shape([h, w, 3])  # without this shape information is lost
         return image
 
 
@@ -202,5 +211,4 @@ def random_box_jitter(box, landmarks, ratio=0.05):
             dtype=tf.float32
         )
         distorted_box = tf.stack([ymin3, xmin3, ymax3, xmax3], axis=0)
-        distorted_box = tf.clip_by_value(distorted_box, 0.0, 1.0)
         return distorted_box
