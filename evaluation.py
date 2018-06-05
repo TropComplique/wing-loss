@@ -15,20 +15,23 @@ and that they are in the following order:
 """
 
 
-def nme_metric_ops(labels, landmarks):
+def nme_metric_ops(labels, landmarks, image_size):
     """
     Arguments:
         labels, landmarks: a float tensors with shape [batch_size, num_landmarks, 2].
+        image_size:
     Returns:
         two ops like in tf.metrics API.
     """
-
+    w, h = image_size
+    scaler = tf.constant([h, w], dtype=tf.float32)
+    labels = labels * scaler
+    landmarks = landmarks * scaler
+    
     norms = tf.norm(labels - landmarks, axis=2)
     mean_norm = tf.reduce_mean(norms, axis=1)  # shape [batch_size]
     eye_distance = tf.norm(labels[:, 0, :] - labels[:, 1, :], axis=1)  # shape [batch_size]
 
-    epsilon = 1e-4
-    values = mean_norm/tf.maximum(eye_distance, epsilon)
-
+    values = mean_norm/tf.maximum(eye_distance, 1.0)
     mean, update_op = tf.metrics.mean(values)
     return mean, update_op

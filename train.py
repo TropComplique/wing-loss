@@ -55,6 +55,6 @@ train_spec = tf.estimator.TrainSpec(
 )
 eval_spec = tf.estimator.EvalSpec(
     val_input_fn, steps=None,
-    start_delay_secs=600, throttle_secs=600
+    start_delay_secs=1200, throttle_secs=1200
 )
 tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)

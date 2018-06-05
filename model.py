@@ -41,7 +41,7 @@ def model_fn(features, labels, mode, params, config):
     if mode == tf.estimator.ModeKeys.EVAL:
         eval_metric_ops = {
             'validation_mae': tf.metrics.mean_absolute_error(labels, landmarks),
-            'normalized_mean_error': nme_metric_ops(labels, landmarks)
+            'normalized_mean_error': nme_metric_ops(labels, landmarks, params['image_size'])
         }
         return tf.estimator.EstimatorSpec(
             mode, loss=total_loss,
