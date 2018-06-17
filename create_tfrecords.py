@@ -86,7 +86,7 @@ def dict_to_tf_example(annotation, image_dir):
     xmax = float(annotation['box']['xmax'])/width
     assert (ymin < ymax) and (xmin < xmax)
 
-    # note that i reversing order of the coordinates here
+    # note that i reversing the order of the coordinates here
     landmarks = annotation['landmarks']
     landmarks_flattened = []
     for x, y in landmarks:

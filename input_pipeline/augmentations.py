@@ -194,19 +194,21 @@ def random_box_jitter(box, landmarks, ratio=0.05):
         # all landmarks were inside the box
         ymin3 = tf.random_uniform(
             [], minval=ymin2 - box_height * ratio,
-            maxval=ymin, dtype=tf.float32
+            maxval=tf.minimum(ymin, ymin2 + box_height * ratio),
+            dtype=tf.float32
         )
         xmin3 = tf.random_uniform(
             [], minval=xmin2 - box_width * ratio,
-            maxval=xmin, dtype=tf.float32
+            maxval=tf.minimum(xmin, xmin2 + box_width * ratio),
+            dtype=tf.float32
         )
         ymax3 = tf.random_uniform(
-            [], minval=ymax,
+            [], minval=tf.maximum(ymax, ymax2 - box_height * ratio),
             maxval=ymax2 + box_height * ratio,
             dtype=tf.float32
         )
         xmax3 = tf.random_uniform(
-            [], minval=xmax,
+            [], minval=tf.maximum(xmax, xmax2 - box_width * ratio),
             maxval=xmax2 + box_width * ratio,
             dtype=tf.float32
         )

@@ -8,7 +8,7 @@ from model import model_fn
 
 CONFIG = 'config.json'
 OUTPUT_FOLDER = 'export/run00'
-GPU_TO_USE = '0'
+GPU_TO_USE = '1'
 
 tf.logging.set_verbosity('INFO')
 params = json.load(open(CONFIG))

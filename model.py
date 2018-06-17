@@ -55,17 +55,20 @@ def model_fn(features, labels, mode, params, config):
 
     with tf.variable_scope('learning_rate'):
         global_step = tf.train.get_global_step()
-        learning_rate = tf.train.polynomial_decay(
-            params['initial_learning_rate'], global_step,
-            decay_steps=params['num_steps'],
-            end_learning_rate=params['end_learning_rate'],
-            power=1.0  # linear decay
-        )
+#         learning_rate = tf.train.polynomial_decay(
+#             params['initial_learning_rate'], global_step,
+#             decay_steps=params['num_steps'],
+#             end_learning_rate=params['end_learning_rate'],
+#             power=1.0  # linear decay
+#         )
+        learning_rate = tf.train.piecewise_constant(global_step, [80000, 130000], [1e-4, 1e-5, 1e-6])
         tf.summary.scalar('learning_rate', learning_rate)
 
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops), tf.variable_scope('optimizer'):
-        optimizer = tf.train.MomentumOptimizer(learning_rate, momentum=0.9, use_nesterov=True)
+        #optimizer = tf.train.RMSPropOptimizer(learning_rate, decay=0.9, momentum=0.9, epsilon=1.0)
+        optimizer = tf.train.AdamOptimizer(learning_rate)
+        #optimizer = tf.train.MomentumOptimizer(learning_rate, momentum=0.9, use_nesterov=True)
         grads_and_vars = optimizer.compute_gradients(total_loss)
         train_op = optimizer.apply_gradients(grads_and_vars, global_step)
 

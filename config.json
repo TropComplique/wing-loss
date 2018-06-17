@@ -11,5 +11,5 @@
   "batch_size": 8,
   "train_dataset": "data/train_shards/",
   "val_dataset": "data/val_shards/",
-  "num_steps": 120000
+  "num_steps": 150000
 }

@@ -35,7 +35,7 @@ def get_input_fn(is_training=True):
 
 
 config = tf.ConfigProto(allow_soft_placement=True)
-config.gpu_options.visible_device_list = '1'
+config.gpu_options.visible_device_list = '0'
 
 run_config = tf.estimator.RunConfig()
 run_config = run_config.replace(
