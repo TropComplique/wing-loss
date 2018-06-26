@@ -4,8 +4,8 @@
   "num_landmarks": 5, "weight_decay": 5e-4,
   "epsilon": 2.0, "w": 10.0,
 
-  "initial_learning_rate": 3e-5,
-  "end_learning_rate": 3e-7,
+  "lr_boundaries": [80000, 130000],
+  "lr_values": [1e-4, 1e-5, 1e-6],
 
   "image_size": [112, 128],
   "batch_size": 8,

@@ -2,6 +2,12 @@ import tensorflow as tf
 import numpy as np
 
 
+"""
+This is a face detector taken from here:
+https://github.com/TropComplique/FaceBoxes-tensorflow
+"""
+
+
 class FaceDetector:
     def __init__(self, model_path, gpu_memory_fraction=0.25, visible_device_list='0'):
         """

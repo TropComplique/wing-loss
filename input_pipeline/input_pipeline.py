@@ -156,7 +156,7 @@ def crop(image, landmarks, box):
     ymax, xmax = ymax + 0.5 * margin_y, xmax + 0.5 * margin_x
     ymin, xmin = tf.maximum(ymin, 0.0), tf.maximum(xmin, 0.0)
     ymax, xmax = tf.minimum(ymax, image_h), tf.minimum(xmax, image_w)
-    
+
     # for some reason box width or height sometimes becomes negative,
     # it happens very very rarely
     h, w = tf.to_int32(ymax - ymin), tf.to_int32(xmax - xmin)
@@ -171,8 +171,8 @@ def crop(image, landmarks, box):
         landmarks = (landmarks * scaler) - shift
         return image, landmarks
     image, landmarks = tf.cond(
-        tf.greater(h*w, 0), 
-        lambda: do_it(image, landmarks), 
+        tf.greater(h*w, 0),
+        lambda: do_it(image, landmarks),
         lambda: (image, landmarks)
     )
 

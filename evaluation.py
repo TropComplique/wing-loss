@@ -4,6 +4,7 @@ import tensorflow as tf
 For evaluation during the training I use NME(normalized mean error).
 You can find it here:
 https://arxiv.org/abs/1506.03799 (Pose-Invariant 3D Face Alignment)
+But my version is slightly different.
 
 It is assumed that num_landmarks = 5
 and that they are in the following order:
@@ -15,19 +16,13 @@ and that they are in the following order:
 """
 
 
-def nme_metric_ops(labels, landmarks, image_size):
+def nme_metric_ops(labels, landmarks):
     """
     Arguments:
         labels, landmarks: a float tensors with shape [batch_size, num_landmarks, 2].
-        image_size:
     Returns:
         two ops like in tf.metrics API.
     """
-    w, h = image_size
-    scaler = tf.constant([h, w], dtype=tf.float32)
-    labels = labels * scaler
-    landmarks = landmarks * scaler
-    
     norms = tf.norm(labels - landmarks, axis=2)
     mean_norm = tf.reduce_mean(norms, axis=1)  # shape [batch_size]
     eye_distance = tf.norm(labels[:, 0, :] - labels[:, 1, :], axis=1)  # shape [batch_size]

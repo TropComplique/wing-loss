@@ -74,7 +74,7 @@ def random_rotation(image, box, landmarks, max_angle=10):
 
 def random_gaussian_blur(image, probability=0.3, kernel_size=3):
     h, w, _ = image.shape.as_list()
-    
+
     def blur(image):
         image = (image*255.0).astype('uint8')
         image = cv2.blur(image, (kernel_size, kernel_size))
