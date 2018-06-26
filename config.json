@@ -7,7 +7,7 @@
   "lr_boundaries": [80000, 130000],
   "lr_values": [1e-4, 1e-5, 1e-6],
 
-  "image_size": [112, 128],
+  "image_size": [64, 64],
   "batch_size": 8,
   "train_dataset": "data/train_shards/",
   "val_dataset": "data/val_shards/",
