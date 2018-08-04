@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from network import network
 from loss import wing_loss
-from evaluation import nme_metric_ops
+from metrics import nme_metric_ops
 
 
 def model_fn(features, labels, mode, params, config):

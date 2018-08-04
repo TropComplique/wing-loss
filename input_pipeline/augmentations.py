@@ -21,11 +21,10 @@ def random_rotation(image, box, landmarks, max_angle=10):
         )
 
         # find the center of the image
-        image_h = tf.to_float(tf.shape(image)[0])
-        image_w = tf.to_float(tf.shape(image)[1])
-        scaler = tf.stack([image_h, image_w], axis=0)
-        center = tf.stack([0.5*image_h, 0.5*image_w], axis=0)
-        center = tf.reshape(center, [1, 2])
+        image_height = tf.to_float(tf.shape(image)[0])
+        image_width = tf.to_float(tf.shape(image)[1])
+        scaler = tf.stack([image_height, image_width], axis=0)
+        center = tf.reshape(0.5*scaler, [1, 2])
 
         rotation = tf.stack([
             tf.cos(theta), tf.sin(theta),
@@ -70,6 +69,56 @@ def random_rotation(image, box, landmarks, max_angle=10):
         image = tf.contrib.image.transform(image, transform, interpolation='BILINEAR')
 
         return image, box, landmarks
+
+
+def random_box_jitter(box, landmarks, ratio=0.05):
+    """Randomly jitter bounding box.
+
+    Arguments:
+        box: a float tensor with shape [4].
+        landmarks: a float tensor with shape [num_landmarks, 2].
+        ratio: a float number.
+            The ratio of the box width and height that the corners can jitter.
+            For example if the width is 100 pixels and ratio is 0.05,
+            the corners can jitter up to 5 pixels in the x direction.
+    Returns:
+        a float tensor with shape [4].
+    """
+    with tf.name_scope('random_box_jitter'):
+
+        # get the tight box around all landmarks
+        y, x = tf.unstack(landmarks, axis=1)
+        ymin_tight, ymax_tight = tf.reduce_min(y), tf.reduce_max(y)
+        xmin_tight, xmax_tight = tf.reduce_min(x), tf.reduce_max(x)
+        # we want to keep landmarks inside the new distorted box
+
+        ymin, xmin, ymax, xmax = tf.unstack(box, axis=0)
+        box_height, box_width = ymax - ymin, xmax - xmin
+
+        # it is assumed that initially
+        # all landmarks were inside the box
+        new_ymin = tf.random_uniform(
+            [], minval=ymin - box_height * ratio,
+            maxval=tf.minimum(ymin_tight, ymin + box_height * ratio),
+            dtype=tf.float32
+        )
+        new_xmin = tf.random_uniform(
+            [], minval=xmin - box_width * ratio,
+            maxval=tf.minimum(xmin_tight, xmin + box_width * ratio),
+            dtype=tf.float32
+        )
+        new_ymax = tf.random_uniform(
+            [], minval=tf.maximum(ymax_tight, ymax - box_height * ratio),
+            maxval=ymax + box_height * ratio,
+            dtype=tf.float32
+        )
+        new_xmax = tf.random_uniform(
+            [], minval=tf.maximum(xmax_tight, xmax - box_width * ratio),
+            maxval=xmax + box_width * ratio,
+            dtype=tf.float32
+        )
+        distorted_box = tf.stack([new_ymin, new_xmin, new_ymax, new_xmax], axis=0)
+        return distorted_box
 
 
 def random_gaussian_blur(image, probability=0.3, kernel_size=3):
@@ -165,52 +214,3 @@ def random_pixel_value_scale(image, minval=0.9, maxval=1.1, probability=0.5):
         do_it = tf.less(tf.random_uniform([]), probability)
         image = tf.cond(do_it, lambda: random_value_scale(image), lambda: image)
         return image
-
-
-def random_box_jitter(box, landmarks, ratio=0.05):
-    """Randomly jitter bounding boxes.
-
-    Arguments:
-        box: a float tensor with shape [4].
-        landmarks: a float tensor with shape [num_landmarks, 2].
-        ratio: a float number.
-            The ratio of the box width and height that the corners can jitter.
-            For example if the width is 100 pixels and ratio is 0.05,
-            the corners can jitter up to 5 pixels in the x direction.
-    Returns:
-        a float tensor with shape [4].
-    """
-    with tf.name_scope('random_box_jitter'):
-
-        y, x = tf.unstack(landmarks, axis=1)
-        ymin, ymax = tf.reduce_min(y), tf.reduce_max(y)
-        xmin, xmax = tf.reduce_min(x), tf.reduce_max(x)
-        # we want to keep landmarks inside the new distorted box
-
-        ymin2, xmin2, ymax2, xmax2 = tf.unstack(box, axis=0)
-        box_height, box_width = ymax2 - ymin2, xmax2 - xmin2
-
-        # it is assumed that initially
-        # all landmarks were inside the box
-        ymin3 = tf.random_uniform(
-            [], minval=ymin2 - box_height * ratio,
-            maxval=tf.minimum(ymin, ymin2 + box_height * ratio),
-            dtype=tf.float32
-        )
-        xmin3 = tf.random_uniform(
-            [], minval=xmin2 - box_width * ratio,
-            maxval=tf.minimum(xmin, xmin2 + box_width * ratio),
-            dtype=tf.float32
-        )
-        ymax3 = tf.random_uniform(
-            [], minval=tf.maximum(ymax, ymax2 - box_height * ratio),
-            maxval=ymax2 + box_height * ratio,
-            dtype=tf.float32
-        )
-        xmax3 = tf.random_uniform(
-            [], minval=tf.maximum(xmax, xmax2 - box_width * ratio),
-            maxval=xmax2 + box_width * ratio,
-            dtype=tf.float32
-        )
-        distorted_box = tf.stack([ymin3, xmin3, ymax3, xmax3], axis=0)
-        return distorted_box

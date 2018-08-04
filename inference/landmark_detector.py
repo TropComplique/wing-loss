@@ -18,7 +18,7 @@ class KeypointDetector:
         with graph.as_default():
             tf.import_graph_def(graph_def, name='import')
 
-        self.input_image = graph.get_tensor_by_name('import/image:0')
+        self.input_image = graph.get_tensor_by_name('import/images:0')
         self.output = graph.get_tensor_by_name('import/landmarks:0')
 
         gpu_options = tf.GPUOptions(
@@ -31,7 +31,7 @@ class KeypointDetector:
     def __call__(self, image):
         """
         Arguments:
-            image: a numpy uint8 array with shape [128, 112, 3],
+            image: a numpy uint8 array with shape [64, 64, 3],
                 that represents a RGB image.
         Returns:
             a float numpy array of shape [5, 2].

@@ -3,44 +3,43 @@ import tensorflow.contrib.slim as slim
 
 
 BATCH_NORM_MOMENTUM = 0.91
+BATCH_NORM_EPSILON = 1e-3
 
 
 def network(images, is_training, num_landmarks):
     """
     Arguments:
-        images: a float tensor with shape [batch_size, 3, height, width],
+        images: a float tensor with shape [batch_size, height, width, 3],
             a batch of RGB images with pixels values in the range [0, 1].
         is_training: a boolean.
         num_landmarks: an integer.
     Returns:
-        a float tensor with shape [batch_size, 2 * num_landmarks].
+        a float tensor with shape [batch_size, num_landmarks, 2],
+        it has values in the range [0, 1].
     """
-
-    def preprocess(images):
-        """Transform images before feeding them to the network."""
-        return (2.0*images) - 1.0
 
     def batch_norm(x):
         x = tf.layers.batch_normalization(
-            x, axis=1, center=True, scale=True,
-            momentum=BATCH_NORM_MOMENTUM, epsilon=1e-4,
+            x, axis=3, center=True, scale=True,
+            momentum=BATCH_NORM_MOMENTUM,
+            epsilon=BATCH_NORM_EPSILON,
             training=is_training, fused=True,
             name='batch_norm'
         )
         return x
 
     with tf.name_scope('standardize_input'):
-        x = preprocess(images)
+        x = (2.0 * images) - 1.0
 
     with tf.variable_scope('network'):
         params = {
             'padding': 'SAME',
             'activation_fn': tf.nn.relu,
             'normalizer_fn': batch_norm,
-            'data_format': 'NCHW'
+            'data_format': 'NHWC'
         }
         with slim.arg_scope([slim.conv2d], **params):
-            with slim.arg_scope([slim.max_pool2d], stride=2, padding='SAME', data_format='NCHW'):
+            with slim.arg_scope([slim.max_pool2d], stride=2, padding='SAME', data_format='NHWC'):
 
                 num_filters = [32, 64, 128, 256, 512]
                 for i, f in enumerate(num_filters, 1):
@@ -56,14 +55,15 @@ def network(images, is_training, num_landmarks):
             x, 2 * num_landmarks, activation_fn=tf.sigmoid,
             normalizer_fn=None, scope='fc2'
         )
-        x = tf.reshape(x, [-1, num_landmarks, 2])
+        batch_size = tf.shape(x)[0]
+        x = tf.reshape(x, [batch_size, num_landmarks, 2])
         return x
 
 
 def flatten(x):
     with tf.name_scope('flatten'):
         batch_size = tf.shape(x)[0]
-        channels, height, width = x.shape.as_list()[1:]
+        height, width, channels = x.shape.as_list()[1:]
         x = tf.reshape(x, [batch_size, channels * height * width])
         return x
 
@@ -71,10 +71,9 @@ def flatten(x):
 def prelu(x):
     """It is not used here."""
     with tf.variable_scope('prelu'):
-        in_channels = x.shape.as_list()[1]
-        shape = [1, in_channels, 1, 1] if len(x.shape) == 4 else [1, in_channels]
+        in_channels = x.shape[3].value
         alpha = tf.get_variable(
-            'alpha', shape,
+            'alpha', [in_channels],
             initializer=tf.constant_initializer(0.1),
             dtype=tf.float32
         )

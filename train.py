@@ -7,7 +7,9 @@ from input_pipeline import Pipeline
 tf.logging.set_verbosity('INFO')
 
 
-params = json.load(open('config.json'))
+CONFIG = 'config.json'
+GPU_TO_USE = '1'
+params = json.load(open(CONFIG))
 
 
 def get_input_fn(is_training=True):
@@ -35,7 +37,7 @@ def get_input_fn(is_training=True):
 
 
 config = tf.ConfigProto(allow_soft_placement=True)
-config.gpu_options.visible_device_list = '0'
+config.gpu_options.visible_device_list = GPU_TO_USE
 
 run_config = tf.estimator.RunConfig()
 run_config = run_config.replace(
@@ -55,6 +57,6 @@ train_spec = tf.estimator.TrainSpec(
 )
 eval_spec = tf.estimator.EvalSpec(
     val_input_fn, steps=None,
-    start_delay_secs=1200, throttle_secs=1200
+    start_delay_secs=3600, throttle_secs=3600
 )
 tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)

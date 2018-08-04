@@ -8,7 +8,6 @@ import random
 import math
 import argparse
 from tqdm import tqdm
-import sys
 
 
 """
@@ -72,8 +71,7 @@ def dict_to_tf_example(annotation, image_dir):
     # check image format
     encoded_jpg_io = io.BytesIO(encoded_jpg)
     image = PIL.Image.open(encoded_jpg_io)
-    if image.format != 'JPEG':
-        raise ValueError('Image format not JPEG!')
+    assert image.format == 'JPEG'
 
     width = int(annotation['size']['width'])
     height = int(annotation['size']['height'])
@@ -90,7 +88,10 @@ def dict_to_tf_example(annotation, image_dir):
     landmarks = annotation['landmarks']
     landmarks_flattened = []
     for x, y in landmarks:
-        landmarks_flattened.extend([y/height, x/width])
+        y, x = y/height, x/width
+        assert y <= ymax and y >= ymin
+        assert x <= xmax and x >= xmin
+        landmarks_flattened.extend([y, x])
 
     example = tf.train.Example(features=tf.train.Features(feature={
         'image': _bytes_feature(encoded_jpg),
@@ -124,6 +125,7 @@ def main():
     print('Reading annotations from:', annotations_dir, '\n')
 
     examples_list = os.listdir(annotations_dir)
+    random.shuffle(examples_list)
     num_examples = len(examples_list)
     print('Number of images:', num_examples)
 
@@ -154,7 +156,7 @@ def main():
             num_examples_written = 0
             writer.close()
 
-    if num_examples_written != shard_size and num_examples % num_shards != 0:
+    if num_examples_written != 0:
         writer.close()
 
     print('Result is here:', ARGS.output)

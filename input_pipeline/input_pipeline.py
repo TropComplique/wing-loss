@@ -63,7 +63,7 @@ class Pipeline:
     def get_batch(self):
         """
         Returns:
-            features: a float tensor with shape [batch_size, 3, image_height, image_width].
+            features: a float tensor with shape [batch_size, image_height, image_width, 3].
             labels: a float tensor with shape [batch_size, num_landmarks, 2].
         """
         images, landmarks = self.iterator.get_next()
@@ -76,7 +76,7 @@ class Pipeline:
         2. (optionally) Augments it.
 
         Returns:
-            image: a float tensor with shape [3, image_height, image_width],
+            image: a float tensor with shape [image_height, image_width, 3],
                 an RGB image with pixel values in the range [0, 1].
             landmarks: a float tensor with shape [num_landmarks, 2].
         """
@@ -107,6 +107,7 @@ class Pipeline:
         landmarks = tf.to_float(parsed_features['landmarks'])
         landmarks = tf.reshape(landmarks, [self.num_landmarks, 2])
         landmarks = tf.clip_by_value(landmarks, clip_value_min=0.0, clip_value_max=1.0)
+        # it assumed that landmarks are inside the bounding box (or on the edges)
 
         if self.augmentation:
             image, landmarks = self._augmentation_fn(image, box, landmarks)
@@ -117,14 +118,13 @@ class Pipeline:
                 method=RESIZE_METHOD
             )
 
-        image = tf.transpose(image, perm=[2, 0, 1])  # to NCHW format
         return image, landmarks
 
     def _augmentation_fn(self, image, box, landmarks):
         # there are a lot of hyperparameters here,
         # you will need to tune them all, haha
-        image, box, landmarks = random_rotation(image, box, landmarks, max_angle=7)
-        box = random_box_jitter(box, landmarks, ratio=0.03)
+        image, box, landmarks = random_rotation(image, box, landmarks, max_angle=10)
+        box = random_box_jitter(box, landmarks, ratio=0.05)
         image, landmarks = crop(image, landmarks, box)
         image = tf.image.resize_images(
             image, [self.image_height, self.image_width],
@@ -150,16 +150,20 @@ def crop(image, landmarks, box):
     ymin, xmin, ymax, xmax = tf.unstack(box, axis=0)
 
     h, w = ymax - ymin, xmax - xmin
-    margin_y, margin_x = h / 6.0, w / 6.0  # 5.0 here is a hyperparameter
+    margin_y, margin_x = h / 6.0, w / 6.0  # 6.0 here is a hyperparameter
 
     ymin, xmin = ymin - 0.5 * margin_y, xmin - 0.5 * margin_x
     ymax, xmax = ymax + 0.5 * margin_y, xmax + 0.5 * margin_x
     ymin, xmin = tf.maximum(ymin, 0.0), tf.maximum(xmin, 0.0)
     ymax, xmax = tf.minimum(ymax, image_h), tf.minimum(xmax, image_w)
 
-    # for some reason box width or height sometimes becomes negative,
-    # it happens very very rarely
+    ymin, xmin = tf.minimum(ymin, ymax), tf.minimum(xmin, xmax)
+    ymax, xmax = tf.maximum(ymin, ymax), tf.maximum(xmin, xmax)
+
+    # for some reason box width or height sometimes becomes zero,
+    # but it happens very very rarely
     h, w = tf.to_int32(ymax - ymin), tf.to_int32(xmax - xmin)
+    box_is_okay = tf.greater(h*w, 0)
 
     def do_it(image, landmarks):
         image = tf.image.crop_to_bounding_box(
@@ -170,8 +174,9 @@ def crop(image, landmarks, box):
         scaler = tf.stack([image_h/(ymax - ymin), image_w/(xmax - xmin)], axis=0)
         landmarks = (landmarks * scaler) - shift
         return image, landmarks
+
     image, landmarks = tf.cond(
-        tf.greater(h*w, 0),
+        box_is_okay,
         lambda: do_it(image, landmarks),
         lambda: (image, landmarks)
     )
