@@ -1,14 +1,13 @@
 import tensorflow as tf
 import json
 import os
-
-from model import model_fn
+from model import model_fn, RestoreMovingAverageHook
 from input_pipeline import Pipeline
 tf.logging.set_verbosity('INFO')
 
 
 CONFIG = 'config.json'
-GPU_TO_USE = '1'
+GPU_TO_USE = '0'
 params = json.load(open(CONFIG))
 
 
@@ -30,9 +29,7 @@ def get_input_fn(is_training=True):
                 filenames, batch_size=batch_size, image_size=image_size, num_landmarks=num_landmarks,
                 repeat=is_training, shuffle=is_training, augmentation=is_training,
             )
-            features, labels = pipeline.get_batch()
-        return features, labels
-
+        return pipeline.dataset
     return input_fn
 
 
@@ -56,7 +53,7 @@ train_spec = tf.estimator.TrainSpec(
     train_input_fn, max_steps=params['num_steps']
 )
 eval_spec = tf.estimator.EvalSpec(
-    val_input_fn, steps=None,
+    val_input_fn, steps=None, hooks=[RestoreMovingAverageHook(params['model_dir'])],
     start_delay_secs=3600, throttle_secs=3600
 )
 tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)

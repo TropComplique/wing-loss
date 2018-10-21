@@ -35,7 +35,7 @@ Example of use:
 python create_tfrecords.py \
     --image_dir=/home/gpu2/hdd/dan/CelebA/train/images/ \
     --annotations_dir=/home/gpu2/hdd/dan/CelebA/train/annotations/ \
-    --output=data/train_shards/ \
+    --output=/mnt/datasets/CelebA/train_shards/ \
     --num_shards=500
 """
 

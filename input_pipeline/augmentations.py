@@ -143,12 +143,17 @@ def random_gaussian_blur(image, probability=0.3, kernel_size=3):
 def random_color_manipulations(image, probability=0.5, grayscale_probability=0.1):
 
     def manipulate(image):
-        # intensity and order of this operations are kinda random,
-        # so you will need to tune this for you problem
-        image = tf.image.random_brightness(image, 0.1)
-        image = tf.image.random_contrast(image, 0.8, 1.2)
-        image = tf.image.random_hue(image, 0.1)
-        image = tf.image.random_saturation(image, 0.8, 1.2)
+        br_delta = tf.random_uniform([], -32.0/255.0, 32.0/255.0)
+        cb_factor = tf.random_uniform([], -0.1, 0.1)
+        cr_factor = tf.random_uniform([], -0.1, 0.1)
+        channels = tf.split(axis=2, num_or_size_splits=3, value=image)
+        red_offset = 1.402 * cr_factor + br_delta
+        green_offset = -0.344136 * cb_factor - 0.714136 * cr_factor + br_delta
+        blue_offset = 1.772 * cb_factor + br_delta
+        channels[0] += red_offset
+        channels[1] += green_offset
+        channels[2] += blue_offset
+        image = tf.concat(axis=2, values=channels)
         image = tf.clip_by_value(image, 0.0, 1.0)
         return image
 

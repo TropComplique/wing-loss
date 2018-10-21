@@ -1,8 +1,7 @@
 import tensorflow as tf
-
 from .augmentations import random_color_manipulations,\
-    random_flip_left_right, random_pixel_value_scale, random_gaussian_blur,\
-    random_rotation, random_box_jitter
+    random_flip_left_right, random_pixel_value_scale, \
+    random_gaussian_blur, random_rotation, random_box_jitter
 
 
 SHUFFLE_BUFFER_SIZE = 20000
@@ -58,17 +57,7 @@ class Pipeline:
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(buffer_size=1)
 
-        self.iterator = dataset.make_one_shot_iterator()
-
-    def get_batch(self):
-        """
-        Returns:
-            features: a float tensor with shape [batch_size, image_height, image_width, 3].
-            labels: a float tensor with shape [batch_size, num_landmarks, 2].
-        """
-        images, landmarks = self.iterator.get_next()
-        features, labels = images, landmarks
-        return features, labels
+        self.dataset = dataset
 
     def _parse_and_preprocess(self, example_proto):
         """What this function does:
@@ -100,8 +89,7 @@ class Pipeline:
             parsed_features['ymin'], parsed_features['xmin'],
             parsed_features['ymax'], parsed_features['xmax']
         ], axis=0)
-        box = tf.to_float(box)
-        box = tf.clip_by_value(box, clip_value_min=0.0, clip_value_max=1.0)
+        box = tf.clip_by_value(tf.to_float(box), clip_value_min=0.0, clip_value_max=1.0)
 
         # get facial landmarks, they must be in from-zero-to-one format
         landmarks = tf.to_float(parsed_features['landmarks'])
@@ -154,16 +142,15 @@ def crop(image, landmarks, box):
 
     ymin, xmin = ymin - 0.5 * margin_y, xmin - 0.5 * margin_x
     ymax, xmax = ymax + 0.5 * margin_y, xmax + 0.5 * margin_x
-    ymin, xmin = tf.maximum(ymin, 0.0), tf.maximum(xmin, 0.0)
-    ymax, xmax = tf.minimum(ymax, image_h), tf.minimum(xmax, image_w)
-
-    ymin, xmin = tf.minimum(ymin, ymax), tf.minimum(xmin, xmax)
-    ymax, xmax = tf.maximum(ymin, ymax), tf.maximum(xmin, xmax)
+    ymin = tf.clip_by_value(ymin, 0.0, image_h)
+    xmin = tf.clip_by_value(xmin, 0.0, image_w)
+    ymax = tf.clip_by_value(ymax, 0.0, image_h)
+    xmax = tf.clip_by_value(xmax, 0.0, image_w)
 
     # for some reason box width or height sometimes becomes zero,
     # but it happens very very rarely
     h, w = tf.to_int32(ymax - ymin), tf.to_int32(xmax - xmin)
-    box_is_okay = tf.greater(h*w, 0)
+    box_is_okay = tf.greater(h * w, 0)
 
     def do_it(image, landmarks):
         image = tf.image.crop_to_bounding_box(

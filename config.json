@@ -9,7 +9,7 @@
 
   "image_size": [64, 64],
   "batch_size": 8,
-  "train_dataset": "data/train_shards/",
-  "val_dataset": "data/val_shards/",
+  "train_dataset": "/mnt/datasets/CelebA/train_shards/",
+  "val_dataset": "/mnt/datasets/CelebA/val_shards/",
   "num_steps": 150000
 }
