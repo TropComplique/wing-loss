@@ -33,10 +33,16 @@ Landmarks are in the following order:
 
 Example of use:
 python create_tfrecords.py \
-    --image_dir=/home/gpu2/hdd/dan/CelebA/train/images/ \
-    --annotations_dir=/home/gpu2/hdd/dan/CelebA/train/annotations/ \
-    --output=/mnt/datasets/CelebA/train_shards/ \
-    --num_shards=500
+    --image_dir=/mnt/datasets/dan/CelebA/train/images/ \
+    --annotations_dir=/mnt/datasets/dan/CelebA/train/annotations/ \
+    --output=/mnt/datasets/dan/CelebA/train_shards/ \
+    --num_shards=800
+    
+python create_tfrecords.py \
+    --image_dir=/mnt/datasets/dan/CelebA/val/images/ \
+    --annotations_dir=/mnt/datasets/dan/CelebA/val/annotations/ \
+    --output=/mnt/datasets/dan/CelebA/val_shards/ \
+    --num_shards=1
 """
 
 
@@ -72,6 +78,7 @@ def dict_to_tf_example(annotation, image_dir):
     encoded_jpg_io = io.BytesIO(encoded_jpg)
     image = PIL.Image.open(encoded_jpg_io)
     assert image.format == 'JPEG'
+    assert image.mode == 'RGB'
 
     width = int(annotation['size']['width'])
     height = int(annotation['size']['height'])

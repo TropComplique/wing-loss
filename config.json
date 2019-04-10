@@ -1,15 +1,13 @@
 {
   "model_dir": "models/run00",
 
-  "num_landmarks": 5, "weight_decay": 5e-4,
+  "num_landmarks": 5, "weight_decay": 1e-4,
   "epsilon": 2.0, "w": 10.0,
-
-  "lr_boundaries": [80000, 130000],
-  "lr_values": [1e-4, 1e-5, 1e-6],
+  "initial_lr": 4e-4,
 
   "image_size": [64, 64],
-  "batch_size": 8,
-  "train_dataset": "/mnt/datasets/CelebA/train_shards/",
-  "val_dataset": "/mnt/datasets/CelebA/val_shards/",
-  "num_steps": 150000
+  "batch_size": 16,
+  "train_dataset": "/mnt/datasets/dan/CelebA/train_shards/",
+  "val_dataset": "/mnt/datasets/dan/CelebA/val_shards/",
+  "num_steps": 180000
 }

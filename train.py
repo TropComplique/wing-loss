@@ -40,9 +40,9 @@ run_config = tf.estimator.RunConfig()
 run_config = run_config.replace(
     model_dir=params['model_dir'],
     session_config=config,
-    save_summary_steps=100,
-    save_checkpoints_secs=600,
-    log_step_count_steps=100
+    save_summary_steps=2000,
+    save_checkpoints_secs=1800,
+    log_step_count_steps=1000
 )
 
 train_input_fn = get_input_fn(is_training=True)

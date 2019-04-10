@@ -111,16 +111,16 @@ class Pipeline:
     def _augmentation_fn(self, image, box, landmarks):
         # there are a lot of hyperparameters here,
         # you will need to tune them all, haha
-        image, box, landmarks = random_rotation(image, box, landmarks, max_angle=10)
-        box = random_box_jitter(box, landmarks, ratio=0.05)
+        image, box, landmarks = random_rotation(image, box, landmarks, max_angle=5)
+        box = random_box_jitter(box, landmarks, ratio=0.025)
         image, landmarks = crop(image, landmarks, box)
         image = tf.image.resize_images(
             image, [self.image_height, self.image_width],
             method=RESIZE_METHOD
         )
-        image = random_color_manipulations(image, probability=0.2, grayscale_probability=0.05)
-        image = random_pixel_value_scale(image, minval=0.85, maxval=1.15, probability=0.2)
-        image = random_gaussian_blur(image, probability=0.4, kernel_size=4)
+        image = random_color_manipulations(image, probability=0.1, grayscale_probability=0.01)
+        image = random_pixel_value_scale(image, minval=0.85, maxval=1.15, probability=0.1)
+        image = random_gaussian_blur(image, probability=0.1, kernel_size=4)
         image, landmarks = random_flip_left_right(image, landmarks)
         return image, landmarks
 

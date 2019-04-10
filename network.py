@@ -49,11 +49,12 @@ def network(images, is_training, num_landmarks):
         x = flatten(x)
         x = slim.fully_connected(
             x, 1024, activation_fn=tf.nn.relu,
-            normalizer_fn=batch_norm, scope='fc1'
+            normalizer_fn=None, scope='fc1'
         )
         x = slim.fully_connected(
-            x, 2 * num_landmarks, activation_fn=tf.sigmoid,
-            normalizer_fn=None, scope='fc2'
+            x, 2 * num_landmarks, activation_fn=None,
+            normalizer_fn=None, scope='fc2',
+            biases_initializer=tf.constant_initializer(0.5),
         )
         batch_size = tf.shape(x)[0]
         x = tf.reshape(x, [batch_size, num_landmarks, 2])

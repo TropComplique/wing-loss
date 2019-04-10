@@ -16,7 +16,7 @@ Also it creates a .pb frozen inference graph.
 OUTPUT_FOLDER = 'export/'  # for savedmodel
 PB_FILE_PATH = 'model.pb'
 CONFIG = 'config.json'
-GPU_TO_USE = '1'
+GPU_TO_USE = '0'
 
 params = json.load(open(CONFIG))
 WIDTH, HEIGHT = params['image_size']

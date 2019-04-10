@@ -3,3 +3,5 @@ __pycache__
 models/
 export/
 *.pb
+*.csv
+*.npy
