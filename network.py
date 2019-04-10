@@ -14,8 +14,7 @@ def network(images, is_training, num_landmarks):
         is_training: a boolean.
         num_landmarks: an integer.
     Returns:
-        a float tensor with shape [batch_size, num_landmarks, 2],
-        it has values in the range [0, 1].
+        a float tensor with shape [batch_size, num_landmarks, 2].
     """
 
     def batch_norm(x):

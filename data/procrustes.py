@@ -3,6 +3,9 @@ import numpy as np
 
 def procrustes(X, Y, scaling=True, reflection='best'):
     """
+    This function is taken from here:
+    https://stackoverflow.com/a/18927641.
+
     It aligns a shape defined by Y to a shape defined by X.
     # Y_transformed = b * YT + c
 
@@ -13,8 +16,8 @@ def procrustes(X, Y, scaling=True, reflection='best'):
 
     Arguments:
         X, Y: float numpy arrays with shape [n, p].
-        scaling: a boolean, if False, the scaling component of the transformation is forced
-        to 1
+        scaling: a boolean, if False, the scaling
+        component of the transformation is forced to 1.
         reflection: a string or boolean,
             possible values are 'best', False, True.
             if 'best' (default), the transformation solution may or may not
@@ -22,9 +25,9 @@ def procrustes(X, Y, scaling=True, reflection='best'):
             best. setting reflection to True or False forces a solution with
             reflection or no reflection respectively.
     Returns:
-        Y_transformed: a float numpy array with shape [n, p].
-        a dict specifying the rotation, translation and scaling that
-        maps X --> Y
+        Z: a float numpy array with shape [n, p].
+        transform: a dict specifying the rotation, translation
+            and scaling that maps X --> Y.
     """
     muX = X.mean(0)
     muY = Y.mean(0)

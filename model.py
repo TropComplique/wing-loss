@@ -62,9 +62,6 @@ def model_fn(features, labels, mode, params):
 
     with tf.variable_scope('learning_rate'):
         global_step = tf.train.get_global_step()
-#         learning_rate = tf.train.piecewise_constant(
-#             global_step, params['lr_boundaries'], params['lr_values']
-#         )
         learning_rate = tf.train.cosine_decay(
             params['initial_lr'], global_step,
             decay_steps=params['num_steps']

@@ -1,17 +1,7 @@
-# wing-loss
+# Wing Loss
 
-174502 train + val
-19079 test
+This is an implementation of the loss function from [Wing Loss for Robust Facial Landmark Localisation with Convolutional Neural Networks](https://arxiv.org/abs/1711.06753).
 
-
-python create_tfrecords.py \
-    --image_dir=/home/dan/datasets/CelebA/val/images/ \
-    --annotations_dir=/home/dan/datasets/CelebA/val/annotations/ \
-    --output=data/val_shards/ \
-    --num_shards=100
-    
-python create_tfrecords.py \
-    --image_dir=/home/dan/datasets/CelebA/train/images/ \
-    --annotations_dir=/home/dan/datasets/CelebA/train/annotations/ \
-    --output=data/train_shards/ \
-    --num_shards=500
+## Requirements
+1. tensorflow 1.12
+2. numpy, Pillow, tqdm

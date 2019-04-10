@@ -37,7 +37,7 @@ python create_tfrecords.py \
     --annotations_dir=/mnt/datasets/dan/CelebA/train/annotations/ \
     --output=/mnt/datasets/dan/CelebA/train_shards/ \
     --num_shards=800
-    
+
 python create_tfrecords.py \
     --image_dir=/mnt/datasets/dan/CelebA/val/images/ \
     --annotations_dir=/mnt/datasets/dan/CelebA/val/annotations/ \
