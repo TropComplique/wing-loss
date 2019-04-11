@@ -37,7 +37,7 @@ class KeypointDetector:
             a float numpy array of shape [b, 5, 2].
 
         Note that points coordinates are in the order: (y, x).
-        Also coordinates are relative to the image.
+        Also coordinates are relative to the image (in the [0, 1] range).
         """
         landmarks = self.sess.run(self.output, feed_dict={self.input_image: images})
         return landmarks
