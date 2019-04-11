@@ -28,19 +28,16 @@ class KeypointDetector:
         config_proto = tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False)
         self.sess = tf.Session(graph=graph, config=config_proto)
 
-    def __call__(self, image):
+    def __call__(self, images):
         """
         Arguments:
-            image: a numpy uint8 array with shape [64, 64, 3],
-                that represents a RGB image.
+            images: a numpy uint8 array with shape [b, 64, 64, 3],
+                that represents a batch of RGB images.
         Returns:
-            a float numpy array of shape [5, 2].
+            a float numpy array of shape [b, 5, 2].
 
         Note that points coordinates are in the order: (y, x).
+        Also coordinates are relative to the image.
         """
-        h, w, _ = image.shape
-        image = np.expand_dims(image, 0)
-        landmarks = self.sess.run(self.output, feed_dict={self.input_image: image})
-        scaler = np.array([h, w], dtype='float32')
-        landmarks = landmarks[0] * scaler
+        landmarks = self.sess.run(self.output, feed_dict={self.input_image: images})
         return landmarks
